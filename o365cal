@@ -1,0 +1,105 @@
+#!/usr/bin/env python3
+
+import configparser
+import datetime as dt
+import sys
+from os.path import expanduser
+
+import click
+import dateparser
+from html2text import html2text
+from icalendar import Calendar, Event
+from O365 import Account, FileSystemTokenBackend
+
+__author__ = "ojas"
+
+def eprint(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
+
+def get_config_file():
+    return expanduser('~/.o365sync')
+
+def get_account():
+    config = configparser.ConfigParser()
+    config.read(get_config_file())
+    credentials = (config['credentials']['client_id'], config['credentials']['client_secret'])
+    account = Account(credentials)
+    return account
+
+@click.group()
+def main():
+    """
+    Simple CLI for querying books on Google Books by Oyetoke Toby
+    """
+    pass
+
+@main.command()
+def login():
+    scopes = ['offline_access', 'calendar']
+    account = get_account()
+    token_backend = FileSystemTokenBackend(token_filename=expanduser('~/.o365cal_token'))
+    account.authenticate(scopes=scopes, token_backend=token_backend)
+
+@main.command()
+def test():
+    account = get_account()
+    print (account.is_authenticated)
+
+@main.command()
+def setup():
+    config = configparser.ConfigParser()
+    print("Let's get your Microsoft App credentials")
+    client_id = input("Client ID (aka application ID): ")
+    client_secret = input('Client secret (aka application password): ')
+    config['credentials'] = {}
+    config['credentials']['client_id'] = client_id
+    config['credentials']['client_secret'] = client_secret
+    with open(get_config_file(), 'w') as f:
+        config.write(f)
+
+@main.command()
+@click.option("--start", default='1 month ago', help='Start date.')
+@click.option("--end", default='In 1 month', help='End date.')
+@click.option("--limit", default=None, type=int, help='Number of events.')
+@click.option("--quiet", default=False, type=bool, help='Silent mode.')
+#@click.argument('id')
+def generate(start='1 month ago', end='In 1 month', limit=None, quiet=False):
+    account = get_account()
+
+    if not account.is_authenticated:
+        print('Please login with `o365cal login`')
+        sys.exit(1)
+
+    start_date = dateparser.parse(start)
+    end_date = dateparser.parse(end)
+    if not quiet:
+        eprint('Getting events from %s to %s' % (start_date, end_date))
+
+    cal = Calendar()
+    cal.add('prodid', '-//Oj D&B Calendar//mxm.dk//')
+    cal.add('version', '2.0')
+
+    schedule = account.schedule()
+
+    calendar = schedule.get_default_calendar()
+
+    q = calendar.new_query('start').greater_equal(start_date)
+    q.chain('and').on_attribute('end').less(end_date)
+
+    events = calendar.get_events(query=q, include_recurring=True, limit=limit)
+    for event_in in events:
+        # body = event_in.body
+        event_out = Event()
+        event_out.add('summary', event_in.subject)
+        event_out.add('dtstart', event_in.start)
+        event_out.add('dtend', event_in.end)
+        event_out.add('location', event_in.location)
+        event_out.add('description', html2text(event_in.body))
+    #    event_out.add('X-ALT-DESC', event_in.get_body_text())
+        event_out['uid'] = event_in.ical_uid
+        cal.add_component(event_out)
+        
+    print(cal.to_ical().decode('utf-8'))
+
+if __name__ == "__main__":
+    main()

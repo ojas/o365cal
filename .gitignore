@@ -3,4 +3,4 @@ __pycache__/
 ~*
 *.code-workspace
 o365_token.txt
-
+.DS_Store
