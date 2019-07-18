@@ -19,11 +19,15 @@ def eprint(*args, **kwargs):
 def get_config_file():
     return expanduser('~/.o365sync')
 
+def get_token_backend():
+    token_backend = FileSystemTokenBackend(token_filename=expanduser('~/.o365cal_token'))
+    return token_backend
+
 def get_account():
     config = configparser.ConfigParser()
     config.read(get_config_file())
     credentials = (config['credentials']['client_id'], config['credentials']['client_secret'])
-    account = Account(credentials)
+    account = Account(credentials, token_backend=get_token_backend())
     return account
 
 @click.group()
@@ -37,13 +41,13 @@ def main():
 def login():
     scopes = ['offline_access', 'calendar']
     account = get_account()
-    token_backend = FileSystemTokenBackend(token_filename=expanduser('~/.o365cal_token'))
-    account.authenticate(scopes=scopes, token_backend=token_backend)
+    
+    account.authenticate(scopes=scopes)#, token_backend=token_backend)
 
 @main.command()
 def test():
     account = get_account()
-    print (account.is_authenticated)
+    print ('O365.Account.is_authenticated = %s' % (account.is_authenticated, ))
 
 @main.command()
 def setup():
@@ -67,7 +71,7 @@ def generate(start='1 month ago', end='In 1 month', limit=None, quiet=False):
     account = get_account()
 
     if not account.is_authenticated:
-        print('Please login with `o365cal login`')
+        eprint('Please login with `o365cal login`')
         sys.exit(1)
 
     start_date = dateparser.parse(start)

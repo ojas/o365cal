@@ -47,6 +47,11 @@ You can then update via...
 gist -u {URL or GIST_ID} MyCal.ics
 ```
 
+## TODO
+
+- Package <https://dzone.com/articles/executable-package-pip-install>
+
+
 ## Built With
 
 - [python-o365](https://github.com/O365/python-o365) - interact with Microsoft Graph and Office 365 API
