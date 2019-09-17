@@ -32,6 +32,13 @@ pip install gcalcli vobject
 gcalcli --calendar 'My Outlook Cal' import MyCal.ics
 ```
 
+You may want to delete your existing events...
+
+```bash
+gcalcli --calendar 'My Outlook Cal' delete '*'
+```
+
+
 ### Gist-based Approach
 
 We can upload MyCal.ics to <https://gist.github.com/> manually or via CLI using [gist CLI](https://github.com/defunkt/gist).

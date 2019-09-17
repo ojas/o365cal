@@ -13,14 +13,19 @@ from O365 import Account, FileSystemTokenBackend
 
 __author__ = "ojas"
 
+CONFIG_FILE_PATH = '~/.o365sync'
+CAL_TOKEN_FILE_PATH = '~/.o365cal_token'
+
+AVERAGE_RESOURCE_HOURLY_COST_USD = 100
+
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
 def get_config_file():
-    return expanduser('~/.o365sync')
+    return expanduser(CONFIG_FILE_PATH)
 
 def get_token_backend():
-    token_backend = FileSystemTokenBackend(token_filename=expanduser('~/.o365cal_token'))
+    token_backend = FileSystemTokenBackend(token_filename=expanduser(CAL_TOKEN_FILE_PATH))
     return token_backend
 
 def get_account():
@@ -93,8 +98,13 @@ def generate(start='1 month ago', end='In 1 month', limit=None, quiet=False):
     events = calendar.get_events(query=q, include_recurring=True, limit=limit)
     for event_in in events:
         # body = event_in.body
+
+        subject_prefix = ''
+        if len(event_in.attendees):
+            subject_prefix = '[$%s]' % (len(event_in.attendees) * AVERAGE_RESOURCE_HOURLY_COST_USD)
+
         event_out = Event()
-        event_out.add('summary', event_in.subject)
+        event_out.add('summary', ' '.join([subject_prefix, event_in.subject]))
         event_out.add('dtstart', event_in.start)
         event_out.add('dtend', event_in.end)
         event_out.add('location', event_in.location)
