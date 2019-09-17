@@ -100,8 +100,16 @@ def generate(start='1 month ago', end='In 1 month', limit=None, quiet=False):
         # body = event_in.body
 
         subject_prefix = ''
-        if len(event_in.attendees):
-            subject_prefix = '[$%s]' % (len(event_in.attendees) * AVERAGE_RESOURCE_HOURLY_COST_USD)
+        all_attendee_emails = [event_in.organizer.address]
+        all_attendee_emails += [a.address for a in event_in.attendees]
+        all_attendee_emails = set(all_attendee_emails)
+        num_attendees = len(all_attendee_emails)
+        if num_attendees:
+            num_hours = (event_in.end - event_in.start).total_seconds() / 3600
+            if num_hours < 24:
+                round_to = 50
+                total_cost_rounded = round(num_attendees * AVERAGE_RESOURCE_HOURLY_COST_USD * num_hours/round_to) *  round_to
+                subject_prefix = '[$%s]' % (total_cost_rounded)
 
         event_out = Event()
         event_out.add('summary', ' '.join([subject_prefix, event_in.subject]))
