@@ -67,12 +67,12 @@ def setup():
         config.write(f)
 
 @main.command()
-@click.option("--start", default='1 month ago', help='Start date.')
-@click.option("--end", default='In 1 month', help='End date.')
+@click.option("--start", default='1 week ago', help='Start date.')
+@click.option("--end", default='In 2 weeks', help='End date.')
 @click.option("--limit", default=None, type=int, help='Number of events.')
 @click.option("--quiet", default=False, type=bool, help='Silent mode.')
 #@click.argument('id')
-def generate(start='1 month ago', end='In 1 month', limit=None, quiet=False):
+def generate(start='1 week ago', end='In 2 weeks', limit=None, quiet=False):
     account = get_account()
 
     if not account.is_authenticated:
